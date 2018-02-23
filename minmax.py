@@ -33,7 +33,8 @@ def score(winner,maxp):
         return -1
 
 def solve_minmax(board,maxp,player,root):
-    solution = []
+    global deepth
+    solution = [0,0,0,0,0,0,0,0,0]
     try:
         board.index('_')
         for i,p in enumerate(board):
@@ -41,22 +42,41 @@ def solve_minmax(board,maxp,player,root):
                 b1 = []
                 b1.extend(board)
                 b1[i]=player
-                solution.append(solve_minmax(b1,maxp,getsecondplayer(player),False))
+                deepth += 1
+                solution[i] = solve_minmax(b1,maxp,getsecondplayer(player),False)
             elif root:
-                solution.append(p)
+                solution[i] = p
         if root:
             return solution
         elif player == maxp:
+            #print(solution)
             return max(solution)
         else:
             return min(solution)
     except ValueError:
-       return score(checkwinner(board),maxp)
+        #print_board(board)
+        #print(score(checkwinner(board),maxp))
+        return score(checkwinner(board),maxp)
 
 #print(score(checkwinner(['x','o','x','o','x','o','x','o','x']),'x'))
 #print(score(checkwinner(['x','o','x','o','x','o','x','o','x']),'o'))
 #print(solve_minmax(['x','o','x','o','x','o','x','_','_'],'x','x',True))
 #print(solve_minmax(['_','_','_','_','_','_','_','_','_'],'x','x',True))
+
+def picknextmove(board,result,maxp):
+    if len([ t for t in result if t == 0]) == 9: #all draw
+        board[4]=maxp
+    elif len([ t for t in result if t == 1]) == 9: #all wins
+        board[4]=maxp
+    elif len([ t for t in result if t == -1]) == 9: #all loses
+        board[4]=maxp
+    elif len([ t for t in result if t == 1]) > 0: #chance to win
+        pos = result.index(1)
+        board[pos]=maxp
+    elif len([ t for t in result if t == 0]) > 0: #chance to draw
+        pos = result.index(0)
+        board[pos]=maxp
+    return board
 
 if __name__ == "__main__":
     argv = sys.argv[1:]
@@ -64,6 +84,7 @@ if __name__ == "__main__":
     maxp = 'x'
     verbose = False
     board = None
+    deepth = 0
     try:
         opts, args = getopt.getopt(argv,"hf:m:b:v",["first=","maxp=","board=","verbose="])
         for opt, arg in opts:
@@ -72,8 +93,6 @@ if __name__ == "__main__":
                 sys.exit()
             elif opt in ("-f", "--first"):
                 first_player = arg
-                maxp = arg
-            elif opt in ("-m", "--maxp"):
                 maxp = arg
             elif opt in ("-b", "--board"):
                 if len(arg) == 9:
@@ -86,10 +105,12 @@ if __name__ == "__main__":
             ts = time.time()
             result = solve_minmax(board,maxp,first_player,True)
             if verbose:
-                print("time = %0.6f sec"%(time.time() - ts))
+                print("time = %0.6f sec  deepth=%d"%((time.time() - ts),deepth))
                 print("first player = %s \n"%first_player)
                 print(result)
+                board = picknextmove(board,result,maxp)
                 print_board(board)
+                print(''.join(board))
             else:
                 print(result)
     except getopt.GetoptError:
